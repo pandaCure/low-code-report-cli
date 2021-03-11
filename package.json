@@ -42,7 +42,7 @@
     "ts-node": "^9.1.1"
   },
   "bin": {
-    "report": "./bin"
+    "report": "./dist/bin/cli.js"
   },
   "files": [
     "dist/**/*.js",

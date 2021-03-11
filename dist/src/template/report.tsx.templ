@@ -1,0 +1,110 @@
+import React, { useMemo, forwardRef, ForwardedRef, useImperativeHandle, useCallback } from 'react';
+import { Form, FormCore, FormItem } from 'noform-json';
+import { useSelect } from '@src/features/report/hooks';
+import { noFormScrollToError } from '@src/utils';
+import { IRootState } from '@src/types';
+import { bindActionCreators, Dispatch } from '@tkit/actions';
+import actions from '@features/report/redux/actions';
+import { connect } from 'react-redux';
+import { ISFCReportDrawerProps } from '@features/report/components/SFCReportDrawer/SFCReportDrawer';
+import ReportControllerApi from '@src/services/api/ReportControllerApi';
+import { grantTypeList } from '@src/features/plan/consts';
+import PlanControllerApi from '@src/services/api/PlanControllerApi';
+import { IRef } from '@features/report/types';
+export interface ILTI<%= type %>ReportConfig {}
+type StateProps = ReturnType<typeof mapStateToProps>;
+type DispatchProps = ReturnType<typeof mapDispatchToProps>;
+type Props = ILTI<%= type %>ReportConfig & StateProps & DispatchProps;
+
+const LTI<%= type %>ReportConfig = (props: Readonly<Props>, ref: ForwardedRef<IRef>) => {
+  const core = useMemo(() => {
+    return new FormCore({
+      autoValidate: true
+    });
+  }, []);
+  const validate = useCallback(async () => {
+    const error = await core.validate();
+    if (error) {
+      noFormScrollToError(core);
+      return false;
+    }
+    return {
+      params: core.getValues(),
+      api: ReportControllerApi.reportExportUsingPost,
+      type: 'report_plan_export'
+    };
+  }, [core]);
+  useImperativeHandle(
+    ref,
+    () => {
+      return {
+        validate
+      };
+    },
+    [validate]
+  );
+  const select1 = useSelect(
+    'planId',
+    '所属计划',
+    { required: false },
+    {
+      options: grantTypeList,
+      fetchConfig: {
+        fetchReq: PlanControllerApi.incentivePlanAllUsingGet,
+        params: [],
+        key: (v: any) => v.id,
+        value: (v: any) => v.value
+      }
+    },
+    core
+  );
+  const select2 = useSelect(
+    'incentiveType',
+    '激励工具',
+    { required: false },
+    { options: grantTypeList, mode: 'multiple' },
+    core
+  );
+  const formItems = useMemo(() => {
+    return [select1, select2];
+  }, [select1, select2]);
+  return (
+    <div>
+      <Form core={core} direction="vertical-top">
+        {formItems.map(({ name, label, Cp, CpConfig, ItemConfig }) => (
+          <FormItem
+            key={name}
+            className="common-form-body-item"
+            name={name}
+            label={label}
+            inline
+            {...ItemConfig}
+          >
+            {Cp && <Cp {...CpConfig} />}
+          </FormItem>
+        ))}
+      </Form>
+    </div>
+  );
+};
+const LTI<%= type %>Report = forwardRef<IRef, Readonly<Props>>(LTI<%= type %>ReportConfig);
+LTIPlanReport.displayName = 'LTI<%= type %>Report';
+function mapStateToProps(state: IRootState /*, ownProps: ISFCReportDrawerProps*/) {
+  return {
+    dict: state.common.commonModel.commonModel.optionsDict
+  };
+}
+
+/* istanbul ignore next */
+function mapDispatchToProps(dispatch: Dispatch /*, ownProps: ISFCReportDrawerProps*/) {
+  return {
+    actions: bindActionCreators(actions, dispatch)
+  };
+}
+
+export default connect<StateProps, DispatchProps, ISFCReportDrawerProps>(
+  mapStateToProps,
+  mapDispatchToProps,
+  null,
+  { forwardRef: true }
+)(LTI<%= type %>Report);
